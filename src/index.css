@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-street-dark text-street-text font-sans antialiased overflow-x-hidden;
+  background-image: radial-gradient(#1f1f1f 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Títulos en mayúsculas y fuente fuerte */
+h1, h2, h3 {
+  @apply font-display tracking-tight uppercase font-black;
+}
+
+/* Scrollbar oscura */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { @apply bg-street-dark; }
+::-webkit-scrollbar-thumb { @apply bg-street-border rounded-full border-2 border-street-dark; }
+::-webkit-scrollbar-thumb:hover { @apply bg-street-accent; }
