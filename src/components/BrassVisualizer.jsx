@@ -1,12 +1,6 @@
 import React from 'react';
 import { Note, Interval } from '@tonaljs/tonal';
-
-// Lógica de Pistones:
-// 0 = Al aire
-// 1 = 1er pistón (-2 semitonos)
-// 2 = 2do pistón (-1 semitono)
-// 3 = 3er pistón (-3 semitonos)
-// Combinaciones: 12 (-3), 23 (-4), 13 (-5), 123 (-6)
+import { motion } from 'framer-motion';
 
 const VALVE_MAP = {
   0: [false, false, false], // Open
@@ -18,25 +12,18 @@ const VALVE_MAP = {
   6: [true, true, true],    // 1+2+3
 };
 
-// Serie armónica aproximada (Notas "al aire" para instrumentos en Bb y F)
-// Usamos alturas MIDI aproximadas para calcular la distancia
 const HARMONICS = {
-  'Trompeta (Bb)': ['C4', 'G4', 'C5', 'E5', 'G5', 'Bb5', 'C6'], // Escrito en C
-  'Corno (F)': ['C3', 'G3', 'C4', 'E4', 'G4', 'Bb4', 'C5', 'E5', 'G5'], // Escrito en C
+  'Trompeta (Bb)': ['C4', 'G4', 'C5', 'E5', 'G5', 'Bb5', 'C6'],
+  'Corno (F)': ['C3', 'G3', 'C4', 'E4', 'G4', 'Bb4', 'C5', 'E5', 'G5'],
 };
 
 const BrassVisualizer = ({ note, instrumentName }) => {
-  // 1. Limpiamos la nota (quitamos dobles alteraciones)
   const cleanNote = Note.simplify(note);
-  
-  // 2. Encontramos el armónico "Al aire" más cercano POR ARRIBA
-  // La lógica de los metales es: Buscas el armónico superior y "bajas" usando pistones.
   const harmonics = HARMONICS[instrumentName] || HARMONICS['Trompeta (Bb)'];
   
   let targetHarmonic = null;
   let semitonesDown = 0;
 
-  // Buscamos el armónico base
   for (let h of harmonics) {
     const dist = Interval.semitones(Interval.distance(cleanNote, h));
     if (dist >= 0 && dist <= 6) {
@@ -46,45 +33,54 @@ const BrassVisualizer = ({ note, instrumentName }) => {
     }
   }
 
-  // Si no encontramos (nota muy grave o muy aguda fuera de rango), default a todo abierto o cerrado
   const valves = targetHarmonic ? VALVE_MAP[semitonesDown] : [false, false, false];
   const notFound = !targetHarmonic;
 
   return (
-    <div className="flex flex-col items-center bg-street-dark p-6 rounded-xl border border-street-border mt-6">
-      <h3 className="text-street-muted text-xs font-black uppercase tracking-widest mb-4">
-        Digitación Sugerida ({instrumentName})
+    <div className="flex flex-col items-center justify-center p-6 bg-void border border-white/5 rounded-lg mt-4 w-full">
+      <h3 className="font-mono text-[10px] text-ash-dim uppercase tracking-widest mb-4">
+        Digitación ({instrumentName})
       </h3>
       
       {notFound ? (
-        <div className="text-red-500 font-bold text-sm">Nota fuera de rango común</div>
+        <div className="text-red-500 font-mono text-xs border border-red-500/20 p-2 bg-red-500/5">
+          Nota fuera de rango común
+        </div>
       ) : (
         <div className="flex gap-4">
-          {/* DIBUJO DE LOS 3 PISTONES */}
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex flex-col items-center gap-2">
-              {/* El Botón (Pistón) */}
-              <div 
+              <motion.div 
+                initial={false}
+                animate={{ 
+                  backgroundColor: valves[i] ? '#FFB800' : 'transparent',
+                  borderColor: valves[i] ? '#FFB800' : '#333',
+                  y: valves[i] ? 4 : 0
+                }}
                 className={`
-                  w-12 h-12 rounded-full border-4 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)]
-                  ${valves[i] 
-                    ? 'bg-street-accent border-street-accent translate-y-2 shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]' // Presionado
-                    : 'bg-street-card border-street-muted' // Suelto
-                  }
+                  w-12 h-12 rounded-full border-2 flex items-center justify-center shadow-lg
+                  ${valves[i] ? 'shadow-[0_0_15px_rgba(255,184,0,0.4)]' : ''}
                 `}
-              ></div>
-              <span className="text-street-muted font-bold text-xs">{i + 1}</span>
+              >
+                 {/* Efecto visual de pistón presionado */}
+                 <div className={`w-8 h-8 rounded-full ${valves[i] ? 'bg-black/20' : 'bg-white/5'}`}></div>
+              </motion.div>
+              <span className={`font-mono text-xs font-bold ${valves[i] ? 'text-kinetic' : 'text-ash-dim'}`}>
+                {i + 1}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      <p className="mt-4 text-street-text text-sm">
-        {semitonesDown === 0 
-          ? "Al aire (Sin pistones)" 
-          : `Baja ${semitonesDown} semitonos desde ${targetHarmonic}`
-        }
-      </p>
+      <div className="mt-6 flex items-center gap-2">
+         <span className="w-2 h-2 rounded-full bg-kinetic animate-pulse"></span>
+         <p className="font-mono text-xs text-ash">
+            {semitonesDown === 0 
+              ? "Al aire (Sin pistones)" 
+              : `Baja ${semitonesDown} semitonos`}
+         </p>
+      </div>
     </div>
   );
 };

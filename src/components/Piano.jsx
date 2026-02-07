@@ -1,121 +1,122 @@
 import React, { useEffect, useRef } from 'react';
 import { Note } from '@tonaljs/tonal';
 import * as Tone from 'tone';
+import { motion } from 'framer-motion';
 
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 const Piano = ({ scaleNotes, tonic, useSharps }) => {
-  // Referencia al sintetizador para que persista entre renderizados
   const synth = useRef(null);
 
   useEffect(() => {
-    // Inicializamos el sintetizador con un toque "Industrial" (Sawtooth + Reverb sutil)
     synth.current = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "fatsawtooth" }, // Sonido más agresivo/industrial
-      envelope: { attack: 0.01, decay: 0.1, sustain: 0.3, release: 1 }
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 1 }
     }).toDestination();
-    
-    // Bajamos un poco el volumen global para no saturar
-    synth.current.volume.value = -8;
-
-    return () => {
-      if (synth.current) synth.current.dispose();
-    };
+    synth.current.volume.value = -6;
+    return () => synth.current?.dispose();
   }, []);
 
-  const playNote = (note, octave) => {
-    // Activamos el contexto de audio (necesario en navegadores modernos)
+  const playNote = (n, o) => {
     if (Tone.context.state !== "running") Tone.start();
-    
-    // Tonal devuelve notas tipo "C#", Tone.js necesita octava "C#4"
-    const fullNote = `${note}${octave}`;
-    
-    // Disparamos la nota (duración: 8n = corchea)
-    synth.current.triggerAttackRelease(fullNote, "8n");
+    // Siempre simplificamos la nota para que Tone.js la entienda (ej: B# -> C)
+    const playName = Note.simplify(n);
+    synth.current.triggerAttackRelease(`${playName}${o}`, "8n");
+  };
+
+  // Función para formatear el TEXTO que ve el usuario (Visualización)
+  const getDisplayLabel = (note) => {
+    if (useSharps && note.includes('b')) return Note.enharmonic(note);
+    if (!useSharps && note.includes('#')) return Note.enharmonic(note);
+    return Note.simplify(note);
   };
 
   const renderOctave = (octaveNumber) => {
-    return NOTES.map((note, index) => {
-      const isBlack = note.includes('#');
-      const isInScale = scaleNotes.some(n => Note.chroma(n) === Note.chroma(note));
-      const isRoot = Note.chroma(note) === Note.chroma(tonic);
+    return NOTES.map((physicalNote, index) => {
+      const isBlack = physicalNote.includes('#');
+      
+      // Chequeamos si esta tecla física es parte de la escala seleccionada
+      // Usamos Note.chroma para comparar "alturas" sin importar si se llama C# o Db
+      const matchedScaleNote = scaleNotes.find(n => Note.chroma(n) === Note.chroma(physicalNote));
+      const isInScale = !!matchedScaleNote;
+      const isRoot = isInScale && Note.chroma(matchedScaleNote) === Note.chroma(tonic);
 
-      // --- NOMBRES ---
-      let displayNote = note;
-      if (!useSharps && note.includes('#')) displayNote = Note.enharmonic(note);
-      if (useSharps && note.includes('b')) displayNote = Note.enharmonic(note);
-      displayNote = Note.simplify(displayNote);
+      // Etiqueta a mostrar dentro de la tecla
+      const label = getDisplayLabel(physicalNote);
 
       if (isBlack) return null;
 
-      const nextNote = NOTES[index + 1];
-      const hasBlack = nextNote && nextNote.includes('#');
+      // Lógica para la tecla negra asociada (la que está a la derecha de esta blanca)
+      const nextPhysical = NOTES[index + 1];
+      const hasBlack = nextPhysical && nextPhysical.includes('#');
       
-      let isBlackInScale = false;
-      let isBlackRoot = false;
-      let blackDisplay = '';
-      
+      let blackIsInScale = false;
+      let blackLabel = '';
+      let blackIsRoot = false;
+
       if (hasBlack) {
-        isBlackInScale = scaleNotes.some(n => Note.chroma(n) === Note.chroma(nextNote));
-        isBlackRoot = Note.chroma(nextNote) === Note.chroma(tonic);
-        blackDisplay = nextNote;
-        if (!useSharps) blackDisplay = Note.enharmonic(nextNote);
+        const matchedBlack = scaleNotes.find(n => Note.chroma(n) === Note.chroma(nextPhysical));
+        blackIsInScale = !!matchedBlack;
+        blackLabel = getDisplayLabel(nextPhysical);
+        blackIsRoot = blackIsInScale && Note.chroma(matchedBlack) === Note.chroma(tonic);
       }
 
+      // --- ESTILOS VISUALES (Rojo Sólido) ---
+      
+      // TECLA BLANCA
+      const whiteStyle = isInScale
+        ? 'bg-kinetic text-white shadow-md z-10 border-b-[4px] border-[#b31900]' // ACTIVA (ROJA)
+        : 'bg-white text-ash/30 border-b-[4px] border-[#e5e5e5] hover:bg-gray-50'; // INACTIVA (BLANCA)
+
+      // TECLA NEGRA
+      const blackStyle = blackIsInScale
+        ? 'bg-kinetic text-white border-b-[6px] border-[#990000] shadow-lg z-30' // ACTIVA (ROJA)
+        : 'bg-[#1a1a1a] text-ash/30 border-b-[6px] border-black z-20'; // INACTIVA (NEGRA)
+
       return (
-        <div key={`${note}${octaveNumber}`} className="relative flex-shrink-0">
+        <div key={`${physicalNote}${octaveNumber}`} className="relative flex-shrink-0 group">
           
-          {/* ================= TECLA BLANCA ================= */}
-          <button 
-            // AÑADIDO: Evento Click
-            onClick={() => playNote(note, octaveNumber)}
+          {/* === TECLA BLANCA === */}
+          <motion.button 
+            whileHover={{ y: 2 }}
+            whileTap={{ y: 4 }}
+            onClick={() => playNote(physicalNote, octaveNumber)}
             className={`
-              w-10 sm:w-14 h-32 sm:h-48 rounded-b-md flex flex-col items-center justify-end pb-3 transition-all duration-100 border-b-4 z-10 relative font-bold 
-              border-x border-black outline-none active:scale-[0.98] active:brightness-90
-              ${isInScale 
-                ? 'bg-red-600 text-white border-b-red-900 z-20 shadow-[0_0_15px_rgba(220,38,38,0.4)]' // Añadí un glow suave
-                : 'bg-gray-100 text-gray-900 border-b-gray-400 opacity-80 hover:opacity-100' 
-              }
+              relative w-12 sm:w-16 h-48 flex flex-col items-center justify-end pb-4 
+              transition-colors duration-200 outline-none rounded-b-md border-r border-black/5
+              ${whiteStyle}
             `}
           >
-            {isInScale && (
-              <>
-                <span className="text-sm font-black mb-1 pointer-events-none">{displayNote}</span>
-                {isRoot && (
-                  <div className="w-3 h-3 rounded-full bg-[#222] mt-1 border border-red-400"></div>
-                )}
-              </>
-            )}
-          </button>
+            <div className="flex flex-col items-center gap-1">
+               {/* Nombre de la nota */}
+               <span className={`font-display font-bold text-lg tracking-tighter ${isInScale ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`}>
+                 {label}
+               </span>
+               {/* Punto Tónica */}
+               {isRoot && <div className="w-2 h-2 rounded-full bg-white shadow-sm mb-1"></div>}
+            </div>
+          </motion.button>
           
-          {/* ================= TECLA NEGRA ================= */}
+          {/* === TECLA NEGRA === */}
           {hasBlack && (
-            <button 
-               // AÑADIDO: Evento Click
-              onClick={(e) => {
-                e.stopPropagation(); // Evitar disparar la tecla blanca de abajo
-                playNote(nextNote, octaveNumber);
-              }}
+            <motion.button 
+              whileHover={{ y: 2 }}
+              whileTap={{ y: 4 }}
+              onClick={(e) => { e.stopPropagation(); playNote(nextPhysical, octaveNumber); }}
               className={`
-                absolute -right-3 sm:-right-4 top-0 w-6 sm:w-9 h-20 sm:h-32 z-30 rounded-b-md flex items-end justify-center pb-3 border-b-4 transition-all duration-100
-                border-x border-black outline-none active:scale-[0.98] active:brightness-110
-                ${isBlackInScale 
-                   ? 'bg-red-800 text-white border-b-red-950 shadow-[0_0_10px_rgba(153,27,27,0.5)]' 
-                   : 'bg-gray-900 border-b-black opacity-95 hover:bg-gray-800'
-                }
+                absolute -right-4 sm:-right-5 top-0 w-8 sm:w-10 h-28 sm:h-32 
+                flex items-end justify-center pb-3 transition-colors duration-200 outline-none rounded-b-md
+                ${blackStyle}
               `}
             >
-              {isBlackInScale && (
-                 <div className="flex flex-col items-center gap-1 pointer-events-none">
-                    <span className="text-[10px] font-black text-white/90">
-                      {blackDisplay}
-                    </span>
-                    {isBlackRoot && (
-                       <div className="w-2.5 h-2.5 rounded-full bg-white border border-red-900"></div>
-                    )}
-                 </div>
-              )}
-            </button>
+               <div className="flex flex-col items-center pointer-events-none">
+                  {/* Nombre Nota Negra */}
+                  <span className={`font-display font-bold text-sm tracking-tighter mb-1 ${blackIsInScale ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`}>
+                     {blackLabel}
+                  </span>
+                  {blackIsRoot && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+               </div>
+            </motion.button>
           )}
         </div>
       );
@@ -123,15 +124,13 @@ const Piano = ({ scaleNotes, tonic, useSharps }) => {
   };
 
   return (
-    <div className="w-full overflow-x-auto pb-8 pt-4 select-none">
-      <div className="flex justify-center min-w-max mx-auto bg-[#222] p-4 pt-8 md:p-8 border-t-4 border-street-border rounded-xl shadow-xl relative">
-        {/* Etiqueta decorativa estilo industrial */}
-        <div className="absolute top-2 left-4 text-[10px] text-street-muted font-mono tracking-widest border border-street-muted px-1 rounded opacity-50">
-          SYNTH_MODULE_V1
+    <div className="w-full relative py-8 px-4 bg-void-light border border-black/5 rounded-xl shadow-sm">
+      <div className="overflow-x-auto pb-4 scrollbar-hide flex justify-center">
+        {/* Contenedor del teclado */}
+        <div className="flex relative"> 
+          {renderOctave(3)}
+          {renderOctave(4)}
         </div>
-        
-        {renderOctave(3)}
-        {renderOctave(4)}
       </div>
     </div>
   );

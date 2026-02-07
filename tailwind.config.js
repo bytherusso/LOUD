@@ -7,21 +7,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        street: {
-          dark: '#0a0a0a',     // Fondo principal
-          card: '#171717',     // Fondo de tarjetas
-          accent: '#EAB308',   // Amarillo Industrial
-          text: '#ededed',     // Texto claro
-          muted: '#525252',    // Texto gris
-          border: '#333333'    // Bordes
-        }
+        // FONDO: Un crema suave, tipo papel de arte
+        'void': '#F2F2EC', 
+        // SUPERFICIES: Blanco puro para destacar sobre el crema
+        'void-light': '#FFFFFF',
+        // TEXTO: Negro casi puro (Ink)
+        'ash': '#111111',
+        'ash-dim': '#666666',
+        // ACENTO: Rojo Internacional (Vibrante)
+        'kinetic': '#FF2200', 
       },
       fontFamily: {
-        display: ['ui-sans-serif', 'system-ui', 'sans-serif'], 
+        display: ['"Archivo Black"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       boxShadow: {
-        'hard': '6px 6px 0px 0px rgba(234, 179, 8, 1)', 
-        'hard-sm': '3px 3px 0px 0px rgba(234, 179, 8, 1)',
+        'brutal': '4px 4px 0px 0px #111111', // Sombra dura negra
       }
     },
   },

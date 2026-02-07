@@ -13,9 +13,12 @@
   },
   "dependencies": {
     "@tonaljs/tonal": "^4.10.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.33.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",
+    "tailwind-merge": "^3.4.0",
     "tone": "^15.0.4"
   },
   "devDependencies": {

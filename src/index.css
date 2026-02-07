@@ -1,20 +1,62 @@
+/* IMPORTACIÓN DE FUENTES (Familia Completa para Estilo Suizo) */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@100..800&family=Inter:wght@100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* === CONFIGURACIÓN GLOBAL === */
+:root {
+  scroll-behavior: smooth;
+  --bg-color: #F2F2EC; /* Crema Void */
+  --text-color: #111111; /* Negro Ash */
+  --accent-color: #FF2200; /* Rojo Kinetic */
+}
+
 body {
-  @apply bg-street-dark text-street-text font-sans antialiased overflow-x-hidden;
-  background-image: radial-gradient(#1f1f1f 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  overflow-x: hidden; /* Evita scroll horizontal indeseado */
+  cursor: none; /* Oculta el cursor por defecto (Solo si tienes CustomCursor) */
 }
 
-/* Títulos en mayúsculas y fuente fuerte */
-h1, h2, h3 {
-  @apply font-display tracking-tight uppercase font-black;
+/* Solo ocultar cursor en dispositivos con mouse (para no afectar móviles) */
+@media (hover: hover) and (pointer: fine) {
+  body, a, button, input, select {
+    cursor: none !important;
+  }
 }
 
-/* Scrollbar oscura */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { @apply bg-street-dark; }
-::-webkit-scrollbar-thumb { @apply bg-street-border rounded-full border-2 border-street-dark; }
-::-webkit-scrollbar-thumb:hover { @apply bg-street-accent; }
+/* === TEXTURA DE RUIDO (Noise Overlay) === */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 90; /* Por encima del contenido, debajo del cursor */
+  opacity: 0.06; /* Sutil: parece papel */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* === SELECCIÓN DE TEXTO (Estilo Editorial) === */
+::selection {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+/* === SCROLLBAR CUSTOM (Minimalista) === */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}
